@@ -1,0 +1,67 @@
+#include"stm32f4xx.h"
+ 
+void TIM4_IRQHandler(void);
+
+
+int main()
+{
+  //Enabling timer 4 clock(apb1)
+   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE); 
+  //Enable the GPIOD Clock
+ RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE );
+  
+   
+ //GPIOD Configuration
+ GPIO_InitTypeDef GPIO_InitStruct;
+ GPIO_InitStruct.GPIO_Pin = GPIO_Pin_15;
+ GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+ GPIO_InitStruct.GPIO_Speed = GPIO_Fast_Speed;
+ GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+ GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+  GPIO_Init(GPIOD,&GPIO_InitStruct);
+   //GPIOD Pin 15 ON 
+   GPIO_SetBits(GPIOD,GPIO_Pin_15);
+   
+   
+ 
+   
+//Timer configuration 
+TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
+
+
+  TIM_TimeBaseInitStruct.TIM_Prescaler = 27999; //For 28MHz clock frequencyh
+  TIM_TimeBaseInitStruct.TIM_Period = (10000-1); //For 10s
+  TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+  TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+  //TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0x0000;
+
+
+  TIM_TimeBaseInit(TIM4,&TIM_TimeBaseInitStruct);
+  
+  
+  
+ //NVIC function
+  NVIC_InitTypeDef NVIC_InitStruct;
+  
+  NVIC_InitStruct.NVIC_IRQChannel=TIM4_IRQn;
+  NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority=0;
+  //NVIC_InitStruct.NVIC_IRQChannelSubPriority=0;
+  NVIC_InitStruct.NVIC_IRQChannelCmd= ENABLE;
+  
+  NVIC_Init(&NVIC_InitStruct);
+  
+  TIM_ITConfig(TIM4, TIM_IT_Update,ENABLE);
+  TIM_Cmd(TIM4,ENABLE);
+  TIM4_IRQHandler();
+  
+  while(1);
+ 
+ return 0;
+}
+
+
+void TIM4_IRQHandler(void)
+{
+TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
+GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
+}
