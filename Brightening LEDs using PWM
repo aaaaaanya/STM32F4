@@ -1,0 +1,68 @@
+#include"stm32f4xx.h"
+uint16_t pw=0;
+int n=1; //increment
+int main()
+{
+   
+  //Enable the GPIOD Clock
+ RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
+  
+   
+ //GPIOD Configuration
+ GPIO_InitTypeDef GPIO_InitStruct;
+ GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF; // Alternate Function mode- allows pins to perform additional functions beyond basic input/output capabilities
+ GPIO_InitStruct.GPIO_Speed = GPIO_Fast_Speed; //50MHz speed
+ GPIO_InitStruct.GPIO_OType = GPIO_OType_PP; //push-pull output type
+ GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;//Pull up configuration
+  GPIO_InitStruct.GPIO_Pin = GPIO_Pin_15;
+   GPIO_Init(GPIOD,&GPIO_InitStruct);
+   
+   GPIO_PinAFConfig(GPIOD, GPIO_PinSource15,GPIO_AF_TIM4);
+   
+ //Enabling timer 4 clock(apb1)
+   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);  
+   
+//Timer configuration 
+TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
+//Time=(Prescalar+1) * (Period +1)/Clock frequency
+  TIM_TimeBaseInitStruct.TIM_Prescaler = 0; //(For 28MHz clock frequency) Divides the input clock frequency before it is used to increment the timer counter
+  TIM_TimeBaseInitStruct.TIM_Period = 999; //(For 1s)Maximum value that the timer counter can reach before it overflows and resets to 0
+  TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1; //Divides clock frequency by DIV 1 (or others 2,4,8)
+  TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up; //Counts up from 0 to maximum value and then resets to 0
+  
+  TIM_TimeBaseInit(TIM4,&TIM_TimeBaseInitStruct);
+// Configure the timer for PWM 1
+ TIM_OCInitTypeDef TIM_OCInitStruct;
+
+   TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1; // Output wave form is high when timer counter<compare value, otherwise low waveform
+   TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable; //Enables the output of the timer channel, allows PWM to be output on the pin associated with the timer channel
+  TIM_OCInitStruct.TIM_Pulse = 0; //duty cycle = pulse width / period x 100% = 50%
+  TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_High;//Output polarity of the channel will be high when the timer channel is active
+  
+ 
+  TIM_OC4Init(TIM4, &TIM_OCInitStruct);
+  TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable); //Enables the preload feature for the output compare channel
+  //Preload means the timer's registers are updated with the new values after previous output compare event has occured
+  
+    
+    
+
+  TIM_Cmd(TIM4,ENABLE); //Enables timer 4 counter
+  TIM_ARRPreloadConfig(TIM4,ENABLE);//Configures the auto-reload register sets the maximum value of the timer counter
+    
+  
+  while(1)
+  {
+     pw=pw+n;
+ 
+ if(pw>999)
+  {
+   n=-n;
+  }
+ TIM_SetCompare4(TIM4,pw);
+ 
+ for(int i=0;i<10000;i++);
+}
+ return 0;
+  }
+ 
